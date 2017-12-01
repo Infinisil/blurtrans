@@ -1,0 +1,28 @@
+#!/usr/bin/env zsh
+rm x*.png
+rm y*.png
+
+blurquality=${3:-2}
+blurfactor=${2:-20}
+step() {
+	local k=$1
+	local n=$2
+	bc -l <<< "
+		p=a(1)*4
+		x=p/$n*$k-p/2
+		y=(s(x)+1)*50
+		z=c(x)*$blurfactor
+		print y,\" \",z,\"\n\"
+	"
+}
+filelist=$(mktemp)
+n=${1:-30}
+for k in $(seq 0 $n); do
+	step $k $n | read blend blur
+	echo "Blend: $blend, blur: $blur"
+	composite -monitor ac.png bc.png -blend $blend% x$k.png
+	magick -monitor x$k.png -gaussian-blur $((blur * $blurquality)),$blur y$k.png
+	echo "y$k.png" >> $filelist
+done
+
+feh -f $filelist
