@@ -3,7 +3,7 @@ with import <nixpkgs> {};
 stdenv.mkDerivation {
   name = "blurtrans";
 
-  src = ./.;
+  src = lib.cleanSource ./.;
 
   magick = imagemagick7Big;
   zsh = "${zsh}/bin/zsh";
