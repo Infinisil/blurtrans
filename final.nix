@@ -5,18 +5,18 @@ with builtins;
 folder:
 
 let
-  steps = 30;
+  steps = 10;
 
   defaultOptions = {
     resolution = "1440x900";
     stepcount = steps;
-    blurfactor = 10;
-    blurquality = 2;
+    blurfactor = 1;
+    blurquality = 1;
   };
 
   files' = builtins.attrNames (builtins.readDir folder);
 
-  files = take 8 files';
+  files = take 2 files';
 
   combos' = fs: if length fs < 2 then [] else
     let
@@ -31,13 +31,13 @@ let
     flip map fs (b: [ a b ])
   ));
 
-  blurtrans' = a: b:
+  blurtrans = a: b:
     import ./blurtrans.nix ({
       filea = a;
       fileb = b;
     } // defaultOptions);
 
-  blurtrans = a: b: let
+  blurtrans' = a: b: let
     result = blurtrans' (min a b) (max a b);
   in if a < b then result else runCommand "mirrored" {} ''
     mkdir $out && cd $out
@@ -78,10 +78,8 @@ let
       sleep ''${1:-10}
 
       next=$(ls "@out@/transitions/$cur" | shuf | head -1)
-      for f in @out@/transitions/$next/$cur/*; do
-        ${feh}/bin/feh --bg-fill "$f"
-        sleep ''${2:-0.1}
-      done
+      ${xwinwrap}/bin/xwinwrap -ov -fs -ni -- \
+        ${mpv}/bin/mpv -wid WID --panscan=1 "@out@/transitions/$next/$cur"
       cur="$next"
     done
   '';
