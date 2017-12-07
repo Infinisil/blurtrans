@@ -1,13 +1,35 @@
-#!/usr/bin/env zsh
-rm x*.png
-rm y*.png
+#!@zsh@
+set -euo pipefail
 
-blurquality=${3:-2}
-blurfactor=${2:-20}
+filea=$1
+fileb=$2
+out=$3
+
+if [ "$(ls -A "$out")" ]; then
+	echo Directory $out not empty
+	exit 1
+fi
+
+mkdir -p "$out"
+
+resolution=$4
+
+stepcount=${5:-30}
+blurfactor=${6:-20}
+blurquality=${7:-2}
+
+filear="$(mktemp).png"
+filebr="$(mktemp).png"
+
+@magick@/bin/magick -monitor "$filea" -resize "$resolution^" \
+	-gravity center -crop $resolution+0+0 +repage "$filear"
+@magick@/bin/magick -monitor "$fileb" -resize "$resolution^" \
+	-gravity center -crop $resolution+0+0 +repage "$filebr"
+
 step() {
 	local k=$1
 	local n=$2
-	bc -l <<< "
+	@bc@/bin/bc -l <<< "
 		p=a(1)*4
 		x=p/$n*$k-p/2
 		y=(s(x)+1)*50
@@ -15,14 +37,10 @@ step() {
 		print y,\" \",z,\"\n\"
 	"
 }
-filelist=$(mktemp)
-n=${1:-30}
-for k in $(seq 0 $n); do
-	step $k $n | read blend blur
+for k in $(seq -f "%02g" 1 $stepcount); do
+	step $k $((stepcount + 1)) | read blend blur
 	echo "Blend: $blend, blur: $blur"
-	composite -monitor ac.png bc.png -blend $blend% x$k.png
-	magick -monitor x$k.png -gaussian-blur $((blur * $blurquality)),$blur y$k.png
-	echo "y$k.png" >> $filelist
+	tmp="$(mktemp).png"
+	@magick@/bin/composite -monitor "$filear" "$filebr" -blend $blend% "$tmp"
+	@magick@/bin/magick -monitor "$tmp" -gaussian-blur $((blur * $blurquality)),$blur "$out/$k.png"
 done
-
-feh -f $filelist
