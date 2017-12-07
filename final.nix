@@ -42,7 +42,7 @@ let
   in if a < b then result else runCommand "mirrored" {} ''
     mkdir $out && cd $out
     for k in $(seq -f "%02g" 1 ${toString steps}); do
-      j=$(printf "%02g" $((${toString steps} - k + 1)))
+      j=$(printf "%02g" $((${toString steps} - "10#$k" + 1)))
       ln -vs ${result}/$k.png $j.png
     done
   '';
